@@ -10,44 +10,42 @@ package com.simprok.simprokcore.android
 import com.simprok.simprokandroid.WidgetMachine
 import com.simprok.simprokcore.Layer
 import com.simprok.simprokcore.MachineLayerObject
-import com.simprok.simprokcore.ReducerResult
-import com.simprok.simprokmachine.api.BiMapper
 import com.simprok.simprokmachine.api.Mapper
 
-sealed interface WidgetLayer<State> {
+sealed interface WidgetLayer<Event, State> {
 
-    val layer: Layer<State>
+    val layer: Layer<Event, State>
 
-    interface Type<GlobalState, State, Event> : WidgetLayer<GlobalState> {
+    interface Type<GlobalEvent, GlobalState, State, Event> : WidgetLayer<GlobalEvent, GlobalState> {
 
         val machine: WidgetMachine<State, Event>
 
-        fun map(state: GlobalState): State
+        fun mapState(state: GlobalState): State
 
-        fun reduce(state: GlobalState?, event: Event): ReducerResult<GlobalState>
+        fun mapEvent(event: Event): GlobalEvent
 
-        override val layer: Layer<GlobalState>
-            get() = get(machine, ::map, ::reduce)
+        override val layer: Layer<GlobalEvent, GlobalState>
+            get() = get(machine, ::mapState, ::mapEvent)
     }
 
-    data class Object<GlobalState, State, Event>(
+    data class Object<GlobalEvent, GlobalState, State, Event>(
         private val machine: WidgetMachine<State, Event>,
-        private val mapper: Mapper<GlobalState, State>,
-        private val reducer: BiMapper<GlobalState?, Event, ReducerResult<GlobalState>>
-    ) : WidgetLayer<GlobalState> {
+        private val stateMapper: Mapper<GlobalState, State>,
+        private val eventMapper: Mapper<Event, GlobalEvent>
+    ) : WidgetLayer<GlobalEvent, GlobalState> {
 
-        override val layer: Layer<GlobalState>
-            get() = get(machine, mapper, reducer)
+        override val layer: Layer<GlobalEvent, GlobalState>
+            get() = get(machine, stateMapper, eventMapper)
     }
 }
 
 
-private fun <GlobalState, State, Event> get(
+private fun <GlobalEvent, GlobalState, State, Event> get(
     machine: WidgetMachine<State, Event>,
-    mapper: Mapper<GlobalState, State>,
-    reducer: BiMapper<GlobalState?, Event, ReducerResult<GlobalState>>
-): Layer<GlobalState> = MachineLayerObject(
+    stateMapper: Mapper<GlobalState, State>,
+    eventMapper: Mapper<Event, GlobalEvent>
+): Layer<GlobalEvent, GlobalState> = MachineLayerObject(
     machine.machine,
-    mapper,
-    reducer
+    stateMapper,
+    eventMapper
 )

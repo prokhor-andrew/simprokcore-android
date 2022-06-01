@@ -15,7 +15,7 @@ class StorageLayerMachine(
     override val dispatcher: CoroutineDispatcher
         get() = Dispatchers.Main
 
-    override suspend fun process(input: StorageLayerState?, callback: Handler<StorageLayerEvent>) {
+    override fun process(input: StorageLayerState?, callback: Handler<StorageLayerEvent>) {
         if (input != null) {
             prefs.edit().putInt(key, input.value).apply()
         } else {

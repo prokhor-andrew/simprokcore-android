@@ -12,11 +12,11 @@ import com.simprok.simprokcore.Layer
 import com.simprok.simprokcore.MachineLayerObject
 import com.simprok.simprokmachine.api.Mapper
 
-sealed interface WidgetLayer<Event, State> {
+sealed interface WidgetLayer<State, Event> {
 
-    val layer: Layer<Event, State>
+    val layer: Layer<State, Event>
 
-    interface Type<GlobalEvent, GlobalState, State, Event> : WidgetLayer<GlobalEvent, GlobalState> {
+    interface Type<GlobalState, GlobalEvent, State, Event> : WidgetLayer<GlobalState, GlobalEvent> {
 
         val machine: WidgetMachine<State, Event>
 
@@ -24,27 +24,27 @@ sealed interface WidgetLayer<Event, State> {
 
         fun mapEvent(event: Event): GlobalEvent
 
-        override val layer: Layer<GlobalEvent, GlobalState>
+        override val layer: Layer<GlobalState, GlobalEvent>
             get() = get(machine, ::mapState, ::mapEvent)
     }
 
-    data class Object<GlobalEvent, GlobalState, State, Event>(
+    data class Object<GlobalState, GlobalEvent, State, Event>(
         private val machine: WidgetMachine<State, Event>,
         private val stateMapper: Mapper<GlobalState, State>,
         private val eventMapper: Mapper<Event, GlobalEvent>
-    ) : WidgetLayer<GlobalEvent, GlobalState> {
+    ) : WidgetLayer<GlobalState, GlobalEvent> {
 
-        override val layer: Layer<GlobalEvent, GlobalState>
+        override val layer: Layer<GlobalState, GlobalEvent>
             get() = get(machine, stateMapper, eventMapper)
     }
 }
 
 
-private fun <GlobalEvent, GlobalState, State, Event> get(
+private fun <GlobalState, GlobalEvent, State, Event> get(
     machine: WidgetMachine<State, Event>,
     stateMapper: Mapper<GlobalState, State>,
     eventMapper: Mapper<Event, GlobalEvent>
-): Layer<GlobalEvent, GlobalState> = MachineLayerObject(
+): Layer<GlobalState, GlobalEvent> = MachineLayerObject(
     machine.machine,
     stateMapper,
     eventMapper

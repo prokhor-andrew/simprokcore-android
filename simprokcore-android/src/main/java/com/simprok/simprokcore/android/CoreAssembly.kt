@@ -25,49 +25,50 @@ class CoreAssembly private constructor(
     }
 
     companion object {
-        fun <Event, State> create(
-            layer: WidgetLayer<Event, State>,
+        fun <State, Event> create(
+            layer: WidgetLayer<State, Event>,
             reducer: BiMapper<State?, Event, ReducerResult<State>>
         ): CoreAssembly = create(layer, setOf(), reducer)
 
-        fun <Event, State> create(
-            main: WidgetLayer<Event, State>,
-            vararg secondary: Layer<Event, State>,
+        fun <State, Event> create(
+            main: WidgetLayer<State, Event>,
+            vararg secondary: Layer<State, Event>,
             reducer: BiMapper<State?, Event, ReducerResult<State>>
         ): CoreAssembly = create(main, secondary.toSet(), reducer)
 
-        fun <Event, State> create(
-            main: WidgetLayer<Event, State>,
-            secondary: List<Layer<Event, State>>,
+        fun <State, Event> create(
+            main: WidgetLayer<State, Event>,
+            secondary: List<Layer<State, Event>>,
             reducer: BiMapper<State?, Event, ReducerResult<State>>
         ): CoreAssembly = create(main, secondary.toSet(), reducer)
 
-        fun <Event, State> create(
-            main: WidgetLayer<Event, State>,
-            secondary: Set<Layer<Event, State>>,
+        fun <State, Event> create(
+            main: WidgetLayer<State, Event>,
+            secondary: Set<Layer<State, Event>>,
             reducer: BiMapper<State?, Event, ReducerResult<State>>
         ): CoreAssembly = CoreAssembly { scope ->
-            object : Core<Event, State> {
-                override val layers: Set<Layer<Event, State>>
+            object : Core<State, Event> {
+                override val layers: Set<Layer<State, Event>>
                     get() = secondary.plus(main.layer)
 
                 override val scope: CoroutineScope
                     get() = scope
 
-                override fun reduce(state: State?, event: Event): ReducerResult<State> = reducer(state, event)
+                override fun reduce(state: State?, event: Event): ReducerResult<State> =
+                    reducer(state, event)
             }.start {}
         }
     }
 }
 
-fun <Event, State> Assembly.Companion.create(
-    layer: WidgetLayer<Event, State>,
+fun <State, Event> Assembly.Companion.create(
+    layer: WidgetLayer<State, Event>,
     reducer: BiMapper<State?, Event, ReducerResult<State>>
 ): CoreAssembly = CoreAssembly.create(layer, reducer)
 
-fun <Event, State> Assembly.Companion.create(
-    main: WidgetLayer<Event, State>,
-    vararg secondary: Layer<Event, State>,
+fun <State, Event> Assembly.Companion.create(
+    main: WidgetLayer<State, Event>,
+    vararg secondary: Layer<State, Event>,
     reducer: BiMapper<State?, Event, ReducerResult<State>>
 ): CoreAssembly = CoreAssembly.create(
     main,
@@ -75,9 +76,9 @@ fun <Event, State> Assembly.Companion.create(
     reducer
 )
 
-fun <Event, State> Assembly.Companion.create(
-    main: WidgetLayer<Event, State>,
-    secondary: List<Layer<Event, State>>,
+fun <State, Event> Assembly.Companion.create(
+    main: WidgetLayer<State, Event>,
+    secondary: List<Layer<State, Event>>,
     reducer: BiMapper<State?, Event, ReducerResult<State>>
 ): CoreAssembly = CoreAssembly.create(
     main,
@@ -85,9 +86,9 @@ fun <Event, State> Assembly.Companion.create(
     reducer
 )
 
-fun <Event, State> Assembly.Companion.create(
-    main: WidgetLayer<Event, State>,
-    secondary: Set<Layer<Event, State>>,
+fun <State, Event> Assembly.Companion.create(
+    main: WidgetLayer<State, Event>,
+    secondary: Set<Layer<State, Event>>,
     reducer: BiMapper<State?, Event, ReducerResult<State>>
 ): CoreAssembly = CoreAssembly.create(
     main,

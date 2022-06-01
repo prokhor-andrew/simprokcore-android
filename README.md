@@ -34,9 +34,11 @@ This is done via special [Assembly](https://github.com/simprok-dev/simprokandroi
 ```Kotlin
 start<ActivityInput, ActivityOutput> { activityMachine -> 
     CoreAssembly.create(
-        WidgetLayer.Object(activityMachine, mapper, reducer),
+        WidgetLayer.Object(activityMachine, stateMapper, eventMapper),
         secondary = setOf() // .. other layers
-    )
+    ) { state, event -> 
+        // ReducerResult should be returned here
+    }
 }
 ```
 

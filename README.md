@@ -75,7 +75,7 @@ Check out the [sample](https://github.com/simprok-dev/simprokcore-android/tree/m
 Add this in your project's gradle file:
 
 ```groovy
-implementation 'com.github.simprok-dev:simprokcore-android:1.1.5'
+implementation 'com.github.simprok-dev:simprokcore-android:1.1.6'
 ```
 
 and this in your settings.gradle file:

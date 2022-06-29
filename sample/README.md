@@ -15,12 +15,23 @@ Let's assume we want to create a counter app that shows a number on the screen a
 When we reopen the app we want to see the same number. So the state must be saved in persistent storage. 
 
 
-## Step 1 - Code application's state
+## Step 1 - Code application's state and event
 
 Here is our global state of the application.
 
 ```Kotlin
 data class AppState(val value: Int)
+```
+
+Here are our events of the application.
+
+```Kotlin
+sealed interface AppEvent {
+
+    object UILayerEvent : AppEvent
+
+    data class StorageLayerEvent(val value: Int) : AppEvent
+}
 ```
 
 ## Step 2 - List down APIs
@@ -59,16 +70,11 @@ Will be provided by [start()](https://github.com/simprok-dev/simprokandroid/wiki
 ```Kotlin
 class UILayer(
     override val machine: WidgetMachine<UILayerState, UILayerEvent>
-) : WidgetLayer.Type<AppState, UILayerState, UILayerEvent> {
+) : WidgetLayer.Type<AppState, AppEvent, UILayerState, UILayerEvent> {
 
-    override fun map(state: AppState): UILayerState = UILayerState("${state.value}")
+    override fun mapState(state: AppState): UILayerState = UILayerState("${state.value}")
 
-    override fun reduce(state: AppState?, event: UILayerEvent): ReducerResult<AppState> =
-        if (state == null) {
-            ReducerResult.Skip()
-        } else {
-            ReducerResult.Set(AppState(state.value + 1))
-        }
+    override fun mapEvent(event: UILayerEvent): AppEvent = AppEvent.UILayerEvent
 }
 ```
 
@@ -98,7 +104,7 @@ class StorageLayerMachine(
     override val dispatcher: CoroutineDispatcher
         get() = Dispatchers.Main
 
-    override suspend fun process(input: StorageLayerState?, callback: Handler<StorageLayerEvent>) {
+    override fun process(input: StorageLayerState?, callback: Handler<StorageLayerEvent>) {
         if (input != null) {
             prefs.edit().putInt(key, input.value).apply()
         } else {
@@ -113,15 +119,14 @@ class StorageLayerMachine(
 ```Kotlin
 class StorageLayer(
     private val prefs: SharedPreferences
-) : MachineLayerType<AppState, StorageLayerState, StorageLayerEvent> {
+) : MachineLayerType<AppState, AppEvent, StorageLayerState, StorageLayerEvent> {
 
     override val machine: Machine<StorageLayerState, StorageLayerEvent>
         get() = StorageLayerMachine(prefs)
 
-    override fun map(state: AppState): StorageLayerState = StorageLayerState(state.value)
+    override fun mapState(state: AppState): StorageLayerState = StorageLayerState(state.value)
 
-    override fun reduce(state: AppState?, event: StorageLayerEvent): ReducerResult<AppState> =
-        ReducerResult.Set(AppState(event.value))
+    override fun mapEvent(event: StorageLayerEvent): AppEvent = AppEvent.StorageLayerEvent(event.value)
 }
 ```
 
@@ -131,17 +136,27 @@ class StorageLayer(
 
 - Event is going to be ```Nothing``` as we don't send any events.
 
-- Machine hierarchy not needed, as we can use ```BasicMachine``` class.
+- Logger machine:
+
+```Kotlin
+class LoggerMachine: ChildMachine<String, Nothing> {
+
+    override val dispatcher: CoroutineDispatcher
+        get() = IO
+
+    override fun process(input: String?, callback: Handler<Nothing>) {
+        println(input ?: "loading")
+    }
+}
+```
 
 - Layer class:
 
 ```Kotlin
-class LoggerLayer : ConsumerLayerType<AppState, String, Nothing> {
+class LoggerLayer : ConsumerLayerType<AppState, AppEvent, String, Nothing> {
 
     override val machine: Machine<String, Nothing>
-        get() = BasicMachine(Dispatchers.IO) { input, _ ->
-            println(input)
-        }
+        get() = LoggerMachine()
 
     override fun map(state: AppState): String = "${state.value}"
 }
@@ -175,11 +190,23 @@ override fun onCreate(savedInstanceState: Bundle?) {
                     .commit()
 
 		start<UILayerState, UILayerEvent> {
-		    CoreAssembly.create(
-		        UILayer(it),
-                	LoggerLayer(),
-                	StorageLayer(getSharedPreferences("storage", MODE_PRIVATE))
-		    )
+			CoreAssembly.create(
+			    UILayer(it),
+			    LoggerLayer(),
+			    StorageLayer(getSharedPreferences("storage", MODE_PRIVATE))
+			) { state, event ->
+			    if (state != null) {
+				when (event) {
+				    is AppEvent.UILayerEvent -> ReducerResult.Set(AppState(state.value + 1))
+				    is AppEvent.StorageLayerEvent -> ReducerResult.Skip()
+				}
+			    } else {
+				when (event) {
+				    is AppEvent.UILayerEvent -> ReducerResult.Skip()
+				    is AppEvent.StorageLayerEvent -> ReducerResult.Set(AppState(event.value))
+				}
+			    }
+			}
                 }
         }
 }

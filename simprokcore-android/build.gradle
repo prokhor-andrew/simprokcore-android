@@ -38,7 +38,7 @@ dependencies {
 
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-core:1.6.3'
 
-    api 'com.github.simprok-dev:simprokmachine-android:1.1.6'
+    api 'com.github.simprok-dev:simprokmachine-android:1.1.9'
 }
 
 afterEvaluate {
@@ -48,7 +48,7 @@ afterEvaluate {
                 from components.release
                 groupId = 'com.simprok'
                 artifactId = 'simprokcore-android'
-                version = '1.1.7'
+                version = '1.1.9'
             }
         }
     }

@@ -17,29 +17,28 @@ import com.simprok.simprokmachine.machines.Machine
 /**
  * A RootMachine interface that describes all the layers of the application.
  */
-interface AndroidCore<State, Event> :
-    AndroidRootMachine<StateAction<State, Event>, StateAction<State, Event>> {
+interface AndroidCore<State, Event> : AndroidRootMachine<StateAction<Event>, StateAction<Event>> {
 
     /**
      * Application's layers that receive the latest state and handle it via their
      * mappers as well as emit events that are handled by their reducers.
      */
-    val layers: Set<ComponentLayer<State, Event>>
+    val layers: Set<ComponentLayer<Event>>
 
     fun reduce(state: State?, event: Event): ReducerResult<State>
 
-    override val component: ComponentMachine<StateAction<State, Event>, StateAction<State, Event>>
+    override val component: ComponentMachine<StateAction<Event>, StateAction<Event>>
         get() {
-            val reducer: Machine<StateAction<State, Event>, StateAction<State, Event>> =
+            val reducer: Machine<StateAction<Event>, StateAction<Event>> =
                 CoreReducerMachine<Event, State> { state, event ->
                     reduce(state, event)
-                }.inward<State, StateAction<State, Event>, Event> {
-                    when (it) {
-                        is StateAction.WillUpdate<State, Event> -> Ward.set(it.event)
-                        is StateAction.DidUpdate<State, Event> -> Ward.set()
-                    }
                 }.outward {
-                    Ward.set(StateAction.DidUpdate(it))
+                    Ward.set<StateAction<Event>>(StateAction.DidUpdate(it))
+                }.inward {
+                    when (it) {
+                        is StateAction.WillUpdate<Event> -> Ward.set(it.event)
+                        is StateAction.DidUpdate<Event> -> Ward.set()
+                    }
                 }
 
             return mergeList(layers.map { it.child }).mergeWith(reducer).redirect {
